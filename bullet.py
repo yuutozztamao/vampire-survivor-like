@@ -1,4 +1,5 @@
 from utils import is_hit, enemy_knockback
+from systems.collision import *
 
 
 class Bullet:
@@ -14,6 +15,7 @@ class Bullet:
         attack_power,
         through,
         images,
+        freeze=False,
     ):
         self.x = x
         self.y = y
@@ -28,6 +30,7 @@ class Bullet:
         self.dead = False
         self.image_index = 0
         self.images = images
+        self.freeze = freeze
 
     @property
     def draw_x(self):
@@ -71,12 +74,7 @@ class Bullet:
 
     def update(self, context):
         self.move()
-        self.hit_check(
-            context.enemies,
-            context.player,
-            context.damage_texts,
-            context.gems,
-        )
+
         self.check_dead()
 
     def draw(self, screen):

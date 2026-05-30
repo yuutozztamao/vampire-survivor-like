@@ -73,6 +73,11 @@ def load_assets():
         RandomAimWeapon.bullet_draw_radius,
     )
 
+    assets["image"]["freeze_bullet"] = load_images(
+        ["images/freeze_bullet_0.png"],
+        FreezeWeapon.bullet_draw_radius,
+    )
+
     assets["image"]["surround"] = load_images(
         ["images/surround_area_0.png"], SurroundWeapon.get_draw_radius()
     )
@@ -100,6 +105,8 @@ def set_images(assets):
     RandomWeapon.bullet_images = assets["image"]["random_bullet"]
 
     RandomAimWeapon.bullet_images = assets["image"]["random_aim_bullet"]
+
+    FreezeWeapon.bullet_images = assets["image"]["freeze_bullet"]
 
     SurroundWeapon.images = assets["image"]["surround"]
 

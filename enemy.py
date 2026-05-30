@@ -36,6 +36,9 @@ class Enemy:
         self.hit_effect_timer = 0
         self.image_index = 0
 
+        self.frozen_timer = 0
+        self.frozen_rate = 0.5
+
     @property
     def draw_x(self):
         return self.x - self.draw_radius
@@ -45,11 +48,17 @@ class Enemy:
         return self.y - self.draw_radius
 
     def update(self, context):
+
         self.move(context.player)
         self.hit_effect_timer = max(self.hit_effect_timer - 1, 0)
         self.health_bar_timer = max(self.health_bar_timer - 1, 0)
 
     def move(self, player):
+
+        current_speed = self.speed
+        if self.frozen_timer > 0:
+            self.frozen_timer -= 1
+            current_speed = self.speed * self.frozen_rate
 
         dx = player.x - self.x
         dy = player.y - self.y
@@ -57,16 +66,16 @@ class Enemy:
         distance = math.hypot(dx, dy)
 
         if distance != 0:
-            self.x += dx / distance * self.speed
-            self.y += dy / distance * self.speed
+            self.x += dx / distance * current_speed
+            self.y += dy / distance * current_speed
 
-    def take_damage(self, player, enemies, base_attack_power, damage_texts, gems):
+    def take_damage(self, context, base_attack_power):
         # 敵ダメージ
-        real_damage = int(base_attack_power * player.attack_rate)
+        real_damage = int(base_attack_power * context.player.attack_rate)
         self.health -= real_damage
 
         # ダメージ文字
-        damage_texts.append(
+        context.damage_texts.append(
             {
                 "x": random.uniform(
                     self.x - self.draw_radius / 2,
@@ -92,9 +101,9 @@ class Enemy:
             y = self.y
 
             new_gem = Gem(x, y, self.exp)
-            gems.append(new_gem)
+            context.gems.append(new_gem)
 
-            enemies.remove(self)
+            context.enemies.remove(self)
 
     def draw(self, screen):
 

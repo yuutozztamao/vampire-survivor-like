@@ -1,4 +1,6 @@
-from utils import is_hit
+from utils import is_hit, enemy_knockback
+from enemy import *
+from systems.condition import *
 
 
 def player_enemy_collision(player, enemies):
@@ -22,6 +24,29 @@ def player_enemy_collision(player, enemies):
             break
 
     return False
+
+
+def bullet_enemy_collision(context):
+
+    for bullet in context.bullets:
+        for enemy in context.enemies:
+
+            if is_hit(bullet, enemy) and enemy.id not in bullet.hit_enemies:
+
+                enemy.take_damage(context, bullet.attack_power)
+
+                enemy_knockback(enemy, bullet)
+
+                bullet.hit_enemies.add(enemy.id)
+
+                if bullet.freeze:
+                    apply_frozen(enemy)
+
+                if not bullet.through:
+                    bullet.dead = True
+                    return
+
+                bullet.dead = False
 
 
 def gem_collision(player, gems, level_up, need_exp):

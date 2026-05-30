@@ -79,9 +79,11 @@ def main():
 
     random_aim_weapon = RandomAimWeapon()
 
+    freeze_weapon = FreezeWeapon()
+
     surround_weapon = SurroundWeapon()
-    weapons.append(surround_weapon)
-    surround_weapon.unlocked = True
+    # weapons.append(surround_weapon)
+    # surround_weapon.unlocked = True
 
     # レベルアップ処理
     damage_up = PowerUp("ALL DAMAGE UP", lambda: add_param(player, "attack_rate", 0.2))
@@ -94,6 +96,7 @@ def main():
         normal_weapon,
         random_weapon,
         random_aim_weapon,
+        freeze_weapon,
         surround_weapon,
     }
 
@@ -187,6 +190,8 @@ def main():
 
             for bullet in bullets:
                 bullet.update(context)
+
+            bullet_enemy_collision(context)
 
             bullets[:] = [bullet for bullet in bullets if not bullet.dead]
 

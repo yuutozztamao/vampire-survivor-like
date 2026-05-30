@@ -2,6 +2,7 @@ import random
 import math
 
 from bullet import *
+from utils import get_closest_enemy
 
 
 class Weapon:
@@ -86,9 +87,7 @@ class DamageAreaWeapon(Weapon):
         self.timer += 1
 
         if self.timer > self.cycle:
-            self.attack(
-                context.player, context.enemies, context.damage_texts, context.gems
-            )
+            self.attack(context)
             self.timer = 0
 
 
@@ -151,6 +150,7 @@ class NormalWeapon(ShootingWeapon):
             attack_power=self.attack_power,
             through=self.through,
             images=self.bullet_images,
+            freeze=True,
         )
 
         bullets.append(bullet)
@@ -272,6 +272,67 @@ class RandomAimWeapon(ShootingWeapon):
         bullets.append(bullet)
 
 
+class FreezeWeapon:
+
+    name = "FREEZE SHOT"
+
+    cycle = 20
+    attack_power = 10
+
+    bullet_speed = 10
+    bullet_hit_radius = 20
+    bullet_draw_radius = 20
+
+    through = False
+    bullet_images = []
+
+    level_data = [
+        {"cycle": -5},
+        {"attack_power": 5},
+    ]
+
+    def __init__(self):
+
+        cls = type(self)
+
+        super().__init__(
+            name=cls.name,
+            cycle=cls.cycle,
+            attack_power=cls.attack_power,
+            bullet_speed=cls.bullet_speed,
+            bullet_hit_radius=cls.bullet_hit_radius,
+            bullet_draw_radius=cls.bullet_draw_radius,
+            through=cls.through,
+            level_data=cls.level_data,
+        )
+
+    def shoot(self, player, bullets, enemies):
+
+        if not enemies:
+            return
+
+        enemy = get_closest_enemy(player, enemies)
+
+        angle = math.atan2((enemy.y - player.y), (enemy.x - player.x))
+        x_speed = self.bullet_speed * math.cos(angle)
+        y_speed = self.bullet_speed * math.sin(angle)
+
+        bullet = Bullet(
+            x=player.x,
+            y=player.y,
+            x_speed=x_speed,
+            y_speed=y_speed,
+            hit_radius=self.bullet_hit_radius,
+            draw_radius=self.bullet_draw_radius,
+            attack_power=self.attack_power,
+            through=self.through,
+            images=self.bullet_images,
+            freeze=True,
+        )
+
+        bullets.append(bullet)
+
+
 class SurroundWeapon(DamageAreaWeapon):
 
     name = "SURROUND AREA"
@@ -323,13 +384,13 @@ class SurroundWeapon(DamageAreaWeapon):
 
         self.rotation += 2
 
-    def attack(self, player, enemies, damage_texts, gems):
+    def attack(self, context):
 
-        for enemy in enemies[:]:
+        for enemy in context.enemies[:]:
 
             # 中心同士の距離
-            dx = player.x - enemy.x
-            dy = player.y - enemy.y
+            dx = context.player.x - enemy.x
+            dy = context.player.y - enemy.y
 
             distance = math.hypot(dx, dy)
 
@@ -342,9 +403,7 @@ class SurroundWeapon(DamageAreaWeapon):
                 and distance - enemy_hit_radius < self.outer_hit_radius
             ):
 
-                enemy.take_damage(
-                    player, enemies, self.attack_power, damage_texts, gems
-                )
+                enemy.take_damage(context, self.attack_power)
 
     def draw(self, screen, player):
 

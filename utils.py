@@ -47,3 +47,22 @@ def enemy_knockback(enemy, bullet):
     # ノックバック
     enemy.x += bullet.x_speed * 2
     enemy.y += bullet.y_speed * 2
+
+
+def get_closest_enemy(player, enemies):
+    if not enemies:
+        return None
+
+    closest_enemy = None
+    min_dist = float("inf")
+
+    for enemy in enemies:
+        dx = enemy.x - player.x
+        dy = enemy.y - player.y
+        dist = math.hypot(dx, dy)
+
+        if dist < min_dist:
+            min_dist = dist
+            closest_enemy = enemy
+
+    return closest_enemy
