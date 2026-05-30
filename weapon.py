@@ -17,28 +17,6 @@ class Weapon:
         self.level_data = level_data
         self.unlocked = False
 
-    def level_up(self, weapons, level_up_list):
-
-        if not self.unlocked:
-            weapons.append(self)
-            self.unlocked = True
-            return
-
-        # 最大レベル
-        if self.level >= len(self.level_data) + 1:
-            level_up_list.discard(self)
-            return False
-
-        level_param = self.level_data[self.level - 1]
-
-        for param, value in level_param.items():
-
-            setattr(self, param, getattr(self, param) + value)
-
-        self.level += 1
-
-        return True
-
 
 class ShootingWeapon(Weapon):
 
@@ -150,7 +128,6 @@ class NormalWeapon(ShootingWeapon):
             attack_power=self.attack_power,
             through=self.through,
             images=self.bullet_images,
-            freeze=True,
         )
 
         bullets.append(bullet)
@@ -272,14 +249,14 @@ class RandomAimWeapon(ShootingWeapon):
         bullets.append(bullet)
 
 
-class FreezeWeapon:
+class FreezeWeapon(ShootingWeapon):
 
     name = "FREEZE SHOT"
 
-    cycle = 20
+    cycle = 40
     attack_power = 10
 
-    bullet_speed = 10
+    bullet_speed = 7
     bullet_hit_radius = 20
     bullet_draw_radius = 20
 

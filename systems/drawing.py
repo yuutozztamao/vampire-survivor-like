@@ -29,12 +29,27 @@ def draw_level_up(screen, font, level_up_choices):
     for i, choice in enumerate(level_up_choices):
 
         text = font.render(
-            f"{i + 1} : {choice.name}",
+            f"{i + 1} : {get_display_name(choice)}",
             True,
             (255, 255, 255),
         )
 
         screen.blit(text, (250, 250 + i * 50))
+
+
+def get_display_name(choice):
+
+    name_map = {
+        "damage_up": "Attack Up",
+        "speed_up": "Speed Up",
+        "normal_weapon": "Normal Weapon",
+        "random_weapon": "Random Weapon",
+        "random_aim_weapon": "Aim Weapon",
+        "freeze_weapon": "Freeze Weapon",
+        "surround_weapon": "Surround Weapon",
+    }
+
+    return name_map.get(choice, choice)
 
 
 # ダメージ文字描画

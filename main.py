@@ -13,6 +13,7 @@ from systems.collision import *
 from systems.spawning import *
 from systems.level_up import *
 from systems.drawing import *
+from systems.weapon_factory import create_weapon
 
 
 def update_damage_texts(damage_texts):
@@ -36,14 +37,16 @@ class GameContext:
         self,
         player,
         enemies,
+        weapons,
         bullets,
         gems,
         damage_texts,
-        keys,
+        keys=None,
     ):
 
         self.player = player
         self.enemies = enemies
+        self.weapons = weapons
         self.bullets = bullets
         self.gems = gems
         self.damage_texts = damage_texts
@@ -68,37 +71,14 @@ def main():
     # プレイヤー
     player = Player()
 
-    # 武器
     weapons = []
 
-    normal_weapon = NormalWeapon()
-    weapons.append(normal_weapon)
-    normal_weapon.unlocked = True
+    initial_weapons = ["normal_weapon", "freeze_weapon"]
 
-    random_weapon = RandomWeapon()
-
-    random_aim_weapon = RandomAimWeapon()
-
-    freeze_weapon = FreezeWeapon()
-
-    surround_weapon = SurroundWeapon()
-    # weapons.append(surround_weapon)
-    # surround_weapon.unlocked = True
-
-    # レベルアップ処理
-    damage_up = PowerUp("ALL DAMAGE UP", lambda: add_param(player, "attack_rate", 0.2))
-    speed_up = PowerUp("SPEED UP", lambda: add_param(player, "speed", 1))
-
-    # レベルアップの選択肢のリスト
-    level_up_list = {
-        damage_up,
-        speed_up,
-        normal_weapon,
-        random_weapon,
-        random_aim_weapon,
-        freeze_weapon,
-        surround_weapon,
-    }
+    for name in initial_weapons:
+        w = create_weapon(name)
+        w.unlocked = True
+        weapons.append(w)
 
     # 敵リスト
     enemy_list = [
@@ -144,7 +124,7 @@ def main():
     # ダメージ文字
     damage_texts = []
 
-    context = GameContext(player, enemies, bullets, gems, damage_texts, None)
+    context = GameContext(player, enemies, weapons, bullets, gems, damage_texts)
 
     # レベルアップに必要なexp
     need_exp = 10
@@ -163,16 +143,17 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-            # レベルアップ
             if level_up:
 
-                level_up = level_up_select(
+                result = level_up_select(
                     event,
-                    level_up,
-                    weapons,
                     level_up_choices,
-                    level_up_list,
+                    player,
+                    weapons,
                 )
+
+                if result is not None:
+                    level_up = False
 
         # キー入力
         keys = pygame.key.get_pressed()
@@ -201,7 +182,7 @@ def main():
 
             if level_up:
 
-                level_up_choices = get_level_up_choices(level_up_list)
+                level_up_choices = get_level_up_choices(level_up_pool)
 
             for weapon in weapons:
 
