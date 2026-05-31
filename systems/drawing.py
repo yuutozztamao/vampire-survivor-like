@@ -1,5 +1,8 @@
 import pygame
-from settings import WIDTH, HEIGHT
+
+from settings import WIDTH, HEIGHT, CARD_WIDTH_RATIO, CARD_HEIGHT_RATIO
+from utils import get_weapon_by_id
+from systems.weapon_factory import weapon_registry
 
 
 def draw_exp_bar(screen, player, need_exp):
@@ -16,7 +19,12 @@ def draw_exp_bar(screen, player, need_exp):
     draw_bar(screen, length, value, max_value, height, x, y, back_color, bar_color)
 
 
-def draw_level_up(screen, font, level_up_choices):
+def draw_level_up(
+    screen,
+    font,
+    level_up_choices,
+    weapons,
+):
 
     title = font.render(
         "LEVEL UP!",
@@ -24,32 +32,225 @@ def draw_level_up(screen, font, level_up_choices):
         (255, 255, 255),
     )
 
-    screen.blit(title, (250, 150))
+    title_rect = title.get_rect(center=(WIDTH // 2, HEIGHT // 6))
+
+    screen.blit(title, title_rect)
+
+    card_width = WIDTH * CARD_WIDTH_RATIO
+    card_height = HEIGHT * CARD_HEIGHT_RATIO
+
+    gap = WIDTH // 40
+
+    total_width = card_width * len(level_up_choices) + gap * (len(level_up_choices) - 1)
+
+    start_x = (screen.get_width() - total_width) // 2
+
+    card_y = 170
+
+    small_font = pygame.font.SysFont(
+        None,
+        30,
+    )
 
     for i, choice in enumerate(level_up_choices):
 
-        text = font.render(
-            f"{i + 1} : {get_display_name(choice)}",
-            True,
-            (255, 255, 255),
+        card_x = start_x + i * (card_width + gap)
+
+        card_rect = pygame.Rect(
+            card_x,
+            card_y,
+            card_width,
+            card_height,
         )
 
-        screen.blit(text, (250, 250 + i * 50))
+        # カード背景
+        pygame.draw.rect(
+            screen,
+            (60, 60, 60),
+            card_rect,
+            border_radius=10,
+        )
+
+        # カード枠
+        pygame.draw.rect(
+            screen,
+            (220, 220, 220),
+            card_rect,
+            width=3,
+            border_radius=10,
+        )
+
+        # 選択キー
+        key_text = font.render(
+            f"[{i + 1}]",
+            True,
+            (255, 255, 100),
+        )
+
+        screen.blit(
+            key_text,
+            (card_x + 80, card_y + 15),
+        )
+
+        # タイトル
+        title_lines = wrap_text(
+            get_display_name(choice, weapons),
+            font,
+            card_width - 20,
+        )
+
+        for line_index, line in enumerate(title_lines):
+
+            title_text = font.render(
+                line,
+                True,
+                (255, 255, 255),
+            )
+
+            title_rect = title_text.get_rect(
+                center=(
+                    card_x + card_width // 2,
+                    card_y + 80 + line_index * 35,
+                )
+            )
+
+            screen.blit(
+                title_text,
+                title_rect,
+            )
+
+        # 説明取得
+        description = get_level_up_description(
+            choice,
+            weapons,
+        )
+
+        description = description.replace(
+            ", ",
+            "\n",
+        )
+
+        # 説明文
+        description_lines = []
+
+        for line in description.split("\n"):
+
+            description_lines.extend(
+                wrap_text(
+                    line,
+                    small_font,
+                    card_width - 20,
+                )
+            )
+
+        for line_index, line in enumerate(description_lines):
+
+            desc_text = small_font.render(
+                line,
+                True,
+                (180, 180, 180),
+            )
+
+            screen.blit(
+                desc_text,
+                (
+                    card_x + 15,
+                    card_y + 150 + line_index * 28,
+                ),
+            )
 
 
-def get_display_name(choice):
+def get_display_name(choice, weapons):
 
+    weapon = get_weapon_by_id(
+        weapons,
+        choice,
+    )
+
+    # 所持済み武器
+    if weapon:
+
+        return f"{weapon.name} LvUP"
+
+    # 未所持武器
+    weapon_class = weapon_registry.get(choice)
+
+    if weapon_class:
+
+        return f"{weapon_class.name} UNLOCK"
+
+    # ステータス強化
     name_map = {
         "damage_up": "Attack Up",
         "speed_up": "Speed Up",
-        "normal_weapon": "Normal Weapon",
-        "random_weapon": "Random Weapon",
-        "random_aim_weapon": "Aim Weapon",
-        "freeze_weapon": "Freeze Weapon",
-        "surround_weapon": "Surround Weapon",
     }
 
     return name_map.get(choice, choice)
+
+
+def get_level_up_description(choice, weapons):
+
+    weapon = get_weapon_by_id(
+        weapons,
+        choice,
+    )
+
+    if weapon:
+
+        effect_map = {
+            "cycle": "Cycle",
+            "attack_power": "Attack",
+            "bullet_speed": "Bullet Speed",
+        }
+
+        texts = []
+
+        for param, value in weapon.next_level_data.items():
+
+            name = effect_map.get(
+                param,
+                param,
+            )
+
+            sign = "+" if value > 0 else ""
+
+            texts.append(f"{name} {sign}{value}")
+
+        return ", ".join(texts)
+
+    description_map = {
+        "damage_up": "Player Attack +20%",
+        "speed_up": "Player Speed +1",
+    }
+
+    return description_map.get(choice, "")
+
+
+def wrap_text(text, font, max_width):
+
+    lines = []
+
+    current_line = ""
+
+    for word in text.split():
+
+        test_line = word if current_line == "" else current_line + " " + word
+
+        if font.size(test_line)[0] <= max_width:
+
+            current_line = test_line
+
+        else:
+
+            if current_line:
+                lines.append(current_line)
+
+            current_line = word
+
+    if current_line:
+        lines.append(current_line)
+
+    return lines
 
 
 # ダメージ文字描画

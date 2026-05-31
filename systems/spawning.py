@@ -1,6 +1,32 @@
 import random
+from enemy import *
 
 from settings import WIDTH, HEIGHT
+
+enemy_list = [
+    {
+        "enemy_class": Zombie,
+        "spawn_data": {
+            "min_time": 0,
+            "max_time": 1000,
+            "base_spawn_cycle": 80,
+            "spawn_cycle": 80,
+            "min_spawn_cycle": 40,
+            "spawn_timer": 0,
+        },
+    },
+    {
+        "enemy_class": MuscleZombie,
+        "spawn_data": {
+            "min_time": 1000,
+            "max_time": 60000,
+            "base_spawn_cycle": 50,
+            "spawn_cycle": 50,
+            "min_spawn_cycle": 30,
+            "spawn_timer": 0,
+        },
+    },
+]
 
 
 def enemy_spawn(enemies, enemy_list, timer, next_enemy_id):

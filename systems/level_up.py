@@ -2,6 +2,7 @@ import random
 import pygame
 
 from systems.weapon_factory import create_weapon
+from utils import get_weapon_by_id
 
 # =========================
 # レベルアップ内容定義
@@ -10,7 +11,7 @@ from systems.weapon_factory import create_weapon
 level_up_pool = {
     "damage_up": 10,
     "speed_up": 10,
-    "normal_weapon": 3,
+    "normal_weapon": 103,
     "random_weapon": 3,
     "random_aim_weapon": 2,
     "freeze_weapon": 3,
@@ -95,13 +96,39 @@ def apply_level_up(choice, player, weapons):
 
 
 # =========================
+# レベルアッププールを更新（レベルMAXだったらプールから除外）
+# =========================
+
+
+def build_level_up_pool(base_pool, weapons):
+
+    pool = base_pool.copy()
+
+    for key in list(pool):
+
+        weapon = get_weapon_by_id(weapons, key)
+
+        if weapon and weapon.is_max_level:
+            pool.pop(key)
+
+    return pool
+
+
+# =========================
 # 武器解放処理（ここに集約）
 # =========================
 
 
-def unlock_weapon(weapons, weapon_name):
+def unlock_weapon(weapons, weapon_id):
 
-    weapon = create_weapon(weapon_name)
+    for weapon in weapons:
+
+        if weapon.weapon_id == weapon_id:
+
+            weapon.level_up()
+            return
+
+    weapon = create_weapon(weapon_id)
 
     if weapon is None:
         return

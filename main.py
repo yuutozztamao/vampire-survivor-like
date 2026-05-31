@@ -10,7 +10,7 @@ from weapon import *
 from gem import Gem
 from utils import enemy_separate
 from systems.collision import *
-from systems.spawning import *
+from systems.spawning import enemy_list, enemy_spawn
 from systems.level_up import *
 from systems.drawing import *
 from systems.weapon_factory import create_weapon
@@ -73,49 +73,18 @@ def main():
 
     weapons = []
 
-    initial_weapons = ["normal_weapon", "freeze_weapon"]
+    initial_weapons = ["normal_weapon", "surround_weapon"]
 
     for name in initial_weapons:
         w = create_weapon(name)
         w.unlocked = True
         weapons.append(w)
 
-    # 敵リスト
-    enemy_list = [
-        {
-            "enemy_class": Zombie,
-            "spawn_data": {
-                "min_time": 0,
-                "max_time": 1000,
-                "base_spawn_cycle": 80,
-                "spawn_cycle": 80,
-                "min_spawn_cycle": 40,
-                "spawn_timer": 0,
-            },
-        },
-        {
-            "enemy_class": MuscleZombie,
-            "spawn_data": {
-                "min_time": 1000,
-                "max_time": 60000,
-                "base_spawn_cycle": 50,
-                "spawn_cycle": 50,
-                "min_spawn_cycle": 30,
-                "spawn_timer": 0,
-            },
-        },
-    ]
-
-    # 敵
     enemies = []
+    bullets = []
+    gems = []
 
     next_enemy_id = 0
-
-    # 弾
-    bullets = []
-
-    # ジェム
-    gems = []
 
     level_up_choices = []
 
@@ -137,7 +106,10 @@ def main():
 
     while running:
 
-        # イベント
+        # =========================
+        # イベント処理
+        # =========================
+
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
@@ -161,7 +133,10 @@ def main():
 
         if not level_up:
 
-            # 更新
+            # =========================
+            # 更新処理
+            # =========================
+
             player.update(context)
 
             for enemy in enemies:
@@ -182,7 +157,12 @@ def main():
 
             if level_up:
 
-                level_up_choices = get_level_up_choices(level_up_pool)
+                current_pool = build_level_up_pool(
+                    level_up_pool,
+                    weapons,
+                )
+
+                level_up_choices = get_level_up_choices(current_pool)
 
             for weapon in weapons:
 
@@ -197,7 +177,12 @@ def main():
 
                 running = False
 
-        # 描画
+            game_timer += 1
+
+        # =========================
+        # 描画処理
+        # =========================
+
         screen.fill((0, 0, 0))
 
         player.draw(screen)
@@ -228,11 +213,14 @@ def main():
 
         if level_up:
 
-            draw_level_up(screen, font, level_up_choices)
+            draw_level_up(
+                screen,
+                font,
+                level_up_choices,
+                weapons,
+            )
 
         pygame.display.update()
-
-        game_timer += 1
 
         clock.tick(60)
 

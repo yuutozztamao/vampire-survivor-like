@@ -66,3 +66,13 @@ def get_closest_enemy(player, enemies):
             closest_enemy = enemy
 
     return closest_enemy
+
+
+def get_weapon_by_id(weapons, weapon_id):
+
+    for weapon in weapons:
+
+        if weapon.weapon_id == weapon_id:
+            return weapon
+
+    return None

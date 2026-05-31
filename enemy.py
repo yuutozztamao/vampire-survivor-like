@@ -130,7 +130,7 @@ class Enemy:
         x = self.x - length / 2
         y = self.y + self.draw_radius
 
-        draw_bar(screen, length, value, max_value, height, x, y, back_color, bar_color)
+        # draw_bar(screen, length, value, max_value, height, x, y, back_color, bar_color)
 
 
 class Zombie(Enemy):

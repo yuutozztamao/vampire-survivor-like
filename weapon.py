@@ -1,7 +1,7 @@
 import random
 import math
 
-from bullet import *
+from bullet import Bullet
 from utils import get_closest_enemy
 
 
@@ -16,6 +16,46 @@ class Weapon:
         self.level = 1
         self.level_data = level_data
         self.unlocked = False
+
+    @property
+    def is_max_level(self):
+
+        return self.level > len(self.level_data)
+
+    @property
+    def next_level_data(self):
+
+        if self.is_max_level:
+            return None
+
+        return self.level_data[self.level - 1]
+
+    def level_up(self):
+
+        if self.is_max_level:
+            return False
+
+        data = self.level_data[self.level - 1]
+
+        for param, value in data.items():
+
+            setattr(
+                self,
+                param,
+                getattr(self, param) + value,
+            )
+
+        self.level += 1
+        print(
+            self.name,
+            "Lv",
+            self.level,
+            "Cycle",
+            self.cycle,
+            "Attack",
+            self.attack_power,
+        )
+        return True
 
 
 class ShootingWeapon(Weapon):
@@ -71,9 +111,10 @@ class DamageAreaWeapon(Weapon):
 
 class NormalWeapon(ShootingWeapon):
 
+    weapon_id = "normal_weapon"
     name = "NORMAL SHOT"
 
-    cycle = 40
+    cycle = 60
     attack_power = 10
     bullet_speed = 10
     bullet_hit_radius = 20
@@ -82,8 +123,8 @@ class NormalWeapon(ShootingWeapon):
     bullet_images = []
 
     level_data = [
-        {"cycle": -5},
-        {"attack_power": 5},
+        {"cycle": -10, "attack_power": 5},
+        {"cycle": -10, "attack_power": 15},
     ]
 
     def __init__(self):
@@ -135,6 +176,7 @@ class NormalWeapon(ShootingWeapon):
 
 class RandomWeapon(ShootingWeapon):
 
+    weapon_id = "random_weapon"
     name = "RANDOM SHOT"
 
     cycle = 20
@@ -191,6 +233,7 @@ class RandomWeapon(ShootingWeapon):
 
 class RandomAimWeapon(ShootingWeapon):
 
+    weapon_id = "random_aim_weapon"
     name = "RANDOM AIM SHOT"
 
     cycle = 60
@@ -251,6 +294,7 @@ class RandomAimWeapon(ShootingWeapon):
 
 class FreezeWeapon(ShootingWeapon):
 
+    weapon_id = "freeze_weapon"
     name = "FREEZE SHOT"
 
     cycle = 40
@@ -312,6 +356,7 @@ class FreezeWeapon(ShootingWeapon):
 
 class SurroundWeapon(DamageAreaWeapon):
 
+    weapon_id = "surround_weapon"
     name = "SURROUND AREA"
 
     cycle = 20
