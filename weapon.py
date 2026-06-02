@@ -86,7 +86,7 @@ class ShootingWeapon(Weapon):
 
         if self.timer > self.cycle:
 
-            self.shoot(context.player, context.bullets, context.enemies)
+            self.shoot(context)
 
             self.timer = 0
 
@@ -142,7 +142,10 @@ class NormalWeapon(ShootingWeapon):
             level_data=cls.level_data,
         )
 
-    def shoot(self, player, bullets, enemies):
+    def shoot(self, context):
+
+        player = context.player
+        bullets = context.bullets
 
         x_speed = 0
         y_speed = 0
@@ -209,7 +212,10 @@ class RandomWeapon(ShootingWeapon):
             level_data=cls.level_data,
         )
 
-    def shoot(self, player, bullets, enemies):
+    def shoot(self, context):
+
+        player = context.player
+        bullets = context.bullets
 
         angle = random.randint(0, 360)
 
@@ -266,7 +272,11 @@ class RandomAimWeapon(ShootingWeapon):
             level_data=cls.level_data,
         )
 
-    def shoot(self, player, bullets, enemies):
+    def shoot(self, context):
+
+        player = context.player
+        bullets = context.bullets
+        enemies = context.enemies
 
         if not enemies:
             return
@@ -297,8 +307,8 @@ class FreezeWeapon(ShootingWeapon):
     weapon_id = "freeze_weapon"
     name = "FREEZE SHOT"
 
-    cycle = 40
-    attack_power = 10
+    cycle = 60
+    attack_power = 5
 
     bullet_speed = 7
     bullet_hit_radius = 20
@@ -327,7 +337,11 @@ class FreezeWeapon(ShootingWeapon):
             level_data=cls.level_data,
         )
 
-    def shoot(self, player, bullets, enemies):
+    def shoot(self, context):
+
+        player = context.player
+        bullets = context.bullets
+        enemies = context.enemies
 
         if not enemies:
             return
@@ -427,23 +441,24 @@ class SurroundWeapon(DamageAreaWeapon):
 
                 enemy.take_damage(context, self.attack_power)
 
-    def draw(self, screen, player):
+    def draw(self, screen, context):
+
+        player = context.player
+        cx = context.camera_x
+        cy = context.camera_y
 
         saw_count = 6
-
-        # 画像の軌道の半径
         orbit_radius = (self.outer_hit_radius + self.inner_hit_radius) / 2
 
         for i in range(saw_count):
 
             angle = (360 / saw_count * i) + self.rotation
-
             radian = math.radians(angle)
 
             x = player.x + math.cos(radian) * orbit_radius
             y = player.y + math.sin(radian) * orbit_radius
 
-            draw_x = x - self.draw_radius
-            draw_y = y - self.draw_radius
+            draw_x = x - self.draw_radius - cx
+            draw_y = y - self.draw_radius - cy
 
             screen.blit(self.images[self.image_index], (draw_x, draw_y))

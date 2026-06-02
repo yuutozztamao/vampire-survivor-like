@@ -3,9 +3,13 @@ import pygame
 from settings import WIDTH, HEIGHT, CARD_WIDTH_RATIO, CARD_HEIGHT_RATIO
 from utils import get_weapon_by_id
 from systems.weapon_factory import weapon_registry
+from systems.ui import draw_bar
 
 
-def draw_exp_bar(screen, player, need_exp):
+def draw_exp_bar(screen, context):
+
+    player = context.player
+    need_exp = context.need_exp
 
     length = WIDTH
     value = player.exp
@@ -19,12 +23,10 @@ def draw_exp_bar(screen, player, need_exp):
     draw_bar(screen, length, value, max_value, height, x, y, back_color, bar_color)
 
 
-def draw_level_up(
-    screen,
-    font,
-    level_up_choices,
-    weapons,
-):
+def draw_level_up(screen, font, context):
+
+    level_up_choices = context.level_up_choices
+    weapons = context.weapons
 
     title = font.render(
         "LEVEL UP!",
@@ -170,7 +172,7 @@ def get_display_name(choice, weapons):
     # 所持済み武器
     if weapon:
 
-        return f"{weapon.name} LvUP"
+        return f"{weapon.name} +Level"
 
     # 未所持武器
     weapon_class = weapon_registry.get(choice)
@@ -181,8 +183,9 @@ def get_display_name(choice, weapons):
 
     # ステータス強化
     name_map = {
-        "damage_up": "Attack Up",
-        "speed_up": "Speed Up",
+        "damage_up": "Attack",
+        "speed_up": "Speed",
+        "pickup_radius": "Pickup Range",
     }
 
     return name_map.get(choice, choice)
@@ -212,6 +215,9 @@ def get_level_up_description(choice, weapons):
                 param,
             )
 
+            if isinstance(value, float):
+                value = f"{value * 100:.0f}%" if "rate" in param else value
+
             sign = "+" if value > 0 else ""
 
             texts.append(f"{name} {sign}{value}")
@@ -219,8 +225,9 @@ def get_level_up_description(choice, weapons):
         return ", ".join(texts)
 
     description_map = {
-        "damage_up": "Player Attack +20%",
-        "speed_up": "Player Speed +1",
+        "damage_up": "Attack +20%",
+        "speed_up": "Speed +1",
+        "pickup_radius": "Pickup Range +50",
     }
 
     return description_map.get(choice, "")
@@ -254,7 +261,10 @@ def wrap_text(text, font, max_width):
 
 
 # ダメージ文字描画
-def draw_damage_texts(screen, damage_texts, font):
+def draw_damage_texts(screen, damage_texts, font, context):
+
+    cx = context.camera_x
+    cy = context.camera_y
 
     for text in damage_texts:
 
@@ -266,15 +276,15 @@ def draw_damage_texts(screen, damage_texts, font):
 
         screen.blit(
             damage_surface,
-            (text["x"], text["y"]),
+            (text["x"] - cx, text["y"] - cy),
         )
 
 
 # 経過時間描画
-def draw_timer(screen, font, game_timer):
+def draw_timer(screen, font, context):
 
     # フレーム → 秒
-    total_seconds = game_timer // 60
+    total_seconds = context.game_timer // 60
 
     minutes = total_seconds // 60
     seconds = total_seconds % 60
@@ -291,15 +301,72 @@ def draw_timer(screen, font, game_timer):
     screen.blit(text, (20, 20))
 
 
-def draw_bar(screen, length, value, max_value, height, x, y, back_color, bar_color):
-    if max_value <= 0:
-        return
+def draw_game_over(screen, font):
 
-    # 背景
-    pygame.draw.rect(
-        screen,
-        back_color,
-        (x, y, length, height),
+    text = font.render(
+        "GAME OVER",
+        True,
+        (255, 0, 0),
     )
-    # バー本体
-    pygame.draw.rect(screen, bar_color, (x, y, (length * value / max_value), height))
+
+    rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+
+    screen.blit(text, rect)
+
+
+def draw_background(screen, context, background):
+
+    cx = int(context.camera_x)
+    cy = int(context.camera_y)
+
+    bg_width = background.get_width()
+    bg_height = background.get_height()
+
+    start_x = -(cx % bg_width)
+    start_y = -(cy % bg_height)
+
+    for x in range(-1, 2):
+
+        for y in range(-1, 2):
+
+            screen.blit(
+                background,
+                (
+                    start_x + x * bg_width,
+                    start_y + y * bg_height,
+                ),
+            )
+
+
+def draw_explosions(screen, context):
+
+    for explosion in context.explosions:
+
+        x = explosion["x"] - context.camera_x
+        y = explosion["y"] - context.camera_y
+        radius = explosion["radius"]
+
+        diameter = radius * 2
+
+        explosion_surface = pygame.Surface(
+            (diameter, diameter),
+            pygame.SRCALPHA,
+        )
+
+        pygame.draw.circle(
+            explosion_surface,
+            (255, 80, 0, 100),
+            (
+                radius,
+                radius,
+            ),
+            radius,
+        )
+
+        screen.blit(
+            explosion_surface,
+            (
+                x - radius,
+                y - radius,
+            ),
+        )

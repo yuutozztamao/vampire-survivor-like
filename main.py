@@ -5,14 +5,25 @@ import math
 from assets import set_images, load_assets
 from settings import WIDTH, HEIGHT
 from player import Player
-from enemy import *
 from weapon import *
-from gem import Gem
 from utils import enemy_separate
-from systems.collision import *
-from systems.spawning import enemy_list, enemy_spawn
-from systems.level_up import *
-from systems.drawing import *
+from systems.collision import (
+    player_enemy_collision,
+    bullet_enemy_collision,
+    enemy_bullet_collision,
+    gem_collision,
+)
+from systems.spawning import enemy_spawn
+from systems.level_up import get_level_up_choices, level_up_select, build_level_up_pool
+from systems.drawing import (
+    draw_timer,
+    draw_damage_texts,
+    draw_level_up,
+    draw_exp_bar,
+    draw_game_over,
+    draw_background,
+    draw_explosions,
+)
 from systems.weapon_factory import create_weapon
 
 
@@ -31,26 +42,41 @@ def update_damage_texts(damage_texts):
             damage_texts.remove(text)
 
 
+def update_explosions(explosions):
+
+    for explosion in explosions[:]:
+
+        explosion["timer"] -= 1
+
+        if explosion["timer"] <= 0:
+            explosions.remove(explosion)
+
+
 class GameContext:
 
     def __init__(
         self,
         player,
-        enemies,
-        weapons,
-        bullets,
-        gems,
-        damage_texts,
         keys=None,
     ):
 
         self.player = player
-        self.enemies = enemies
-        self.weapons = weapons
-        self.bullets = bullets
-        self.gems = gems
-        self.damage_texts = damage_texts
+        self.enemies = []
+        self.weapons = []
+        self.bullets = []
+        self.enemy_bullets = []
+        self.gems = []
+        self.damage_texts = []
+        self.explosions = []
         self.keys = keys
+        self.camera_x = 0
+        self.camera_y = 0
+        self.level_up = False
+        self.level_up_choices = []
+        self.need_exp = 10
+        self.game_timer = 0
+        self.game_over = False
+        self.next_enemy_id = 0
 
 
 # メイン処理
@@ -62,41 +88,20 @@ def main():
 
     pygame.display.set_caption("Vampire Survivor Like")
 
-    game_timer = 0
-
     # 画像のロード
     assets = load_assets()
     set_images(assets)
+    background = assets["image"]["background"]
 
-    # プレイヤー
     player = Player()
+    context = GameContext(player)
 
-    weapons = []
-
-    initial_weapons = ["normal_weapon", "surround_weapon"]
+    initial_weapons = ["normal_weapon"]
 
     for name in initial_weapons:
         w = create_weapon(name)
         w.unlocked = True
-        weapons.append(w)
-
-    enemies = []
-    bullets = []
-    gems = []
-
-    next_enemy_id = 0
-
-    level_up_choices = []
-
-    level_up = False
-
-    # ダメージ文字
-    damage_texts = []
-
-    context = GameContext(player, enemies, weapons, bullets, gems, damage_texts)
-
-    # レベルアップに必要なexp
-    need_exp = 10
+        context.weapons.append(w)
 
     running = True
 
@@ -115,23 +120,18 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-            if level_up:
+            if context.level_up:
 
-                result = level_up_select(
-                    event,
-                    level_up_choices,
-                    player,
-                    weapons,
-                )
+                result = level_up_select(event, context)
 
                 if result is not None:
-                    level_up = False
+                    context.level_up = False
 
         # キー入力
         keys = pygame.key.get_pressed()
         context.keys = keys
 
-        if not level_up:
+        if not context.level_up and not context.game_over:
 
             # =========================
             # 更新処理
@@ -139,86 +139,105 @@ def main():
 
             player.update(context)
 
-            for enemy in enemies:
+            # カメラはプレイヤーを追従する
+            context.camera_x = player.x - WIDTH // 2
+            context.camera_y = player.y - HEIGHT // 2
+
+            for enemy in context.enemies:
                 enemy.update(context)
 
-            enemy_separate(enemies)
+            enemy_separate(context.enemies)
 
-            for bullet in bullets:
+            for bullet in context.bullets:
                 bullet.update(context)
 
             bullet_enemy_collision(context)
 
-            bullets[:] = [bullet for bullet in bullets if not bullet.dead]
+            context.bullets[:] = [
+                bullet for bullet in context.bullets if not bullet.dead
+            ]
 
-            update_damage_texts(damage_texts)
+            for enemy_bullet in context.enemy_bullets:
+                enemy_bullet.update(context)
 
-            level_up, need_exp = gem_collision(player, gems, level_up, need_exp)
+            enemy_bullet_collision(context)
 
-            if level_up:
+            context.enemy_bullets[:] = [
+                bullet for bullet in context.enemy_bullets if not bullet.dead
+            ]
+
+            update_damage_texts(context.damage_texts)
+            update_explosions(context.explosions)
+
+            context.level_up, context.need_exp = gem_collision(context)
+
+            if context.level_up:
 
                 current_pool = build_level_up_pool(
-                    level_up_pool,
-                    weapons,
+                    context.weapons,
                 )
 
-                level_up_choices = get_level_up_choices(current_pool)
+                context.level_up_choices = get_level_up_choices(current_pool)
 
-            for weapon in weapons:
+            for weapon in context.weapons:
 
                 weapon.update(context)
 
-            next_enemy_id = enemy_spawn(enemies, enemy_list, game_timer, next_enemy_id)
+            context.next_enemy_id = enemy_spawn(context.enemies, context)
 
             # ゲームオーバー
-            if player_enemy_collision(player, enemies):
+            player_enemy_collision(context)
 
-                print("GAME OVER")
-
-                running = False
-
-            game_timer += 1
+            context.game_timer += 1
 
         # =========================
         # 描画処理
         # =========================
 
-        screen.fill((0, 0, 0))
-
-        player.draw(screen)
-
-        for enemy in enemies:
-            enemy.draw(screen)
-
-        for bullet in bullets:
-            bullet.draw(screen)
-
-        for gem in gems:
-            gem.draw(screen)
-
-        draw_exp_bar(screen, player, need_exp)
-
-        for weapon in weapons:
-
-            if isinstance(weapon, DamageAreaWeapon):
-                weapon.draw(screen, player)
-
-        draw_damage_texts(
+        draw_background(
             screen,
-            damage_texts,
-            font,
+            context,
+            background,
         )
 
-        draw_timer(screen, font, game_timer)
+        player.draw(screen, context)
 
-        if level_up:
+        for enemy in context.enemies:
+            enemy.draw(screen, context)
 
-            draw_level_up(
-                screen,
-                font,
-                level_up_choices,
-                weapons,
-            )
+        for bullet in context.bullets:
+            bullet.draw(screen, context)
+
+        for enemy_bullet in context.enemy_bullets:
+            enemy_bullet.draw(screen, context)
+
+        draw_explosions(screen, context)
+
+        for gem in context.gems:
+            gem.draw(screen, context)
+
+        draw_exp_bar(screen, context)
+
+        for weapon in context.weapons:
+
+            if isinstance(weapon, DamageAreaWeapon):
+                weapon.draw(screen, context)
+
+        draw_damage_texts(screen, context.damage_texts, font, context)
+
+        for gem in context.gems:
+
+            gem.update(context)
+
+        if context.level_up:
+
+            draw_level_up(screen, font, context)
+
+        draw_timer(screen, font, context)
+
+        if context.game_over:
+
+            draw_game_over(screen, font)
 
         pygame.display.update()
 

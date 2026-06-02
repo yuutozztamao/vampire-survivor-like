@@ -13,6 +13,7 @@ class Player:
         self.x = WIDTH / 2
         self.y = HEIGHT / 2
         self.hit_radius = 30
+        self.pickup_radius = 100
         self.face = 0
         self.speed = 5
         self.max_health = 100
@@ -32,9 +33,12 @@ class Player:
 
     def update(self, context):
         self.invincible_timer = max(self.invincible_timer - 1, 0)
-        self.move(context.keys)
+        self.move(context)
 
-    def move(self, keys):
+    def move(self, context):
+
+        keys = context.keys
+
         if keys[pygame.K_w]:
             self.y -= self.speed
             self.face = 0
@@ -51,33 +55,47 @@ class Player:
             self.x += self.speed
             self.face = 3
 
-        # 画面外に出ないようにする
-        self.x = max(self.x, self.draw_radius)
+    def take_damage(self, context, attack_power):
 
-        self.x = min(self.x, WIDTH - self.draw_radius)
+        if self.invincible_timer > 0:
+            return False
 
-        self.y = max(self.y, self.draw_radius)
+        self.health -= attack_power
 
-        self.y = min(self.y, HEIGHT - self.draw_radius)
+        self.invincible_timer = 30
 
-    def draw(self, screen):
+        if self.health <= 0:
+            context.game_over = True
+
+        return True
+
+    def draw(self, screen, context):
+
+        cx = context.camera_x
+        cy = context.camera_y
 
         if self.invincible_timer > 0 and self.invincible_timer % 6 > 4:
             white_img = self.images[0].copy()
             white_img.fill((255, 255, 255), special_flags=pygame.BLEND_RGB_MAX)
-            screen.blit(white_img, (self.draw_x, self.draw_y))
+            screen.blit(white_img, (self.draw_x - cx, self.draw_y - cy))
         else:
-            screen.blit(self.images[0], (self.draw_x, self.draw_y))
+            screen.blit(self.images[0], (self.draw_x - cx, self.draw_y - cy))
 
-        self.draw_health_bar(screen)
+        self.draw_health_bar(screen, context)
 
-    def draw_health_bar(self, screen):
+    def draw_health_bar(self, screen, context):
+
+        cx = context.camera_x
+        cy = context.camera_y
+
         length = 80
         value = self.health
         max_value = self.max_health
         height = 7
-        x = self.x - length / 2
-        y = self.y + self.hit_radius
+
+        x = self.x - length / 2 - cx
+        y = self.y + self.hit_radius - cy
+
         back_color = (100, 100, 100)
         bar_color = (0, 255, 0)
 

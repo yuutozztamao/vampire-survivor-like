@@ -1,9 +1,11 @@
 from utils import is_hit, enemy_knockback
-from enemy import *
 from systems.condition import *
 
 
-def player_enemy_collision(player, enemies):
+def player_enemy_collision(context):
+
+    player = context.player
+    enemies = context.enemies
 
     # 無敵時間中
     if player.invincible_timer > 0:
@@ -14,16 +16,12 @@ def player_enemy_collision(player, enemies):
 
         if is_hit(player, enemy):
 
-            player.health -= enemy.attack_power
-
-            if player.health <= 0:
-                return True
-
-            player.invincible_timer = 30
+            player.take_damage(
+                context,
+                enemy.attack_power,
+            )
 
             break
-
-    return False
 
 
 def bullet_enemy_collision(context):
@@ -49,7 +47,36 @@ def bullet_enemy_collision(context):
                 bullet.dead = False
 
 
-def gem_collision(player, gems, level_up, need_exp):
+def enemy_bullet_collision(context):
+
+    player = context.player
+
+    # 無敵時間中
+    if player.invincible_timer > 0:
+
+        return
+
+    for bullet in context.enemy_bullets[:]:
+
+        if not is_hit(player, bullet):
+            continue
+
+        player.take_damage(
+            context,
+            bullet.attack_power,
+        )
+
+        bullet.dead = True
+
+        break
+
+
+def gem_collision(context):
+
+    player = context.player
+    gems = context.gems
+    level_up = context.level_up
+    need_exp = context.need_exp
 
     for gem in gems[:]:
 

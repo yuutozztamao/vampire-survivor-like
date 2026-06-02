@@ -1,3 +1,6 @@
+import math
+
+
 class Gem:
 
     draw_radius = 15
@@ -18,6 +21,24 @@ class Gem:
     def draw_y(self):
         return self.y - self.draw_radius
 
-    def draw(self, screen):
+    def update(self, context):
 
-        screen.blit(self.images[self.image_index], (self.draw_x, self.draw_y))
+        player = context.player
+
+        dx = player.x - self.x
+        dy = player.y - self.y
+
+        distance = math.hypot(dx, dy)
+
+        if distance < player.pickup_radius and distance > 0:
+
+            speed = max(8, distance / 10)
+
+            self.x += dx / distance * speed
+            self.y += dy / distance * speed
+
+    def draw(self, screen, context):
+        cx = context.camera_x
+        cy = context.camera_y
+
+        screen.blit(self.images[self.image_index], (self.draw_x - cx, self.draw_y - cy))

@@ -1,5 +1,6 @@
 import math
 import pygame
+from settings import WIDTH, HEIGHT
 
 
 def is_hit(obj1, obj2):
@@ -76,3 +77,16 @@ def get_weapon_by_id(weapons, weapon_id):
             return weapon
 
     return None
+
+
+def is_in_camera(
+    x,
+    y,
+    context,
+    margin=0,
+):
+
+    return (
+        context.camera_x - margin <= x <= context.camera_x + WIDTH + margin
+        and context.camera_y - margin <= y <= context.camera_y + HEIGHT + margin
+    )

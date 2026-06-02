@@ -7,7 +7,7 @@ enemy_list = [
     {
         "enemy_class": Zombie,
         "spawn_data": {
-            "min_time": 0,
+            "min_time": 3000,
             "max_time": 1000,
             "base_spawn_cycle": 80,
             "spawn_cycle": 80,
@@ -18,7 +18,7 @@ enemy_list = [
     {
         "enemy_class": MuscleZombie,
         "spawn_data": {
-            "min_time": 1000,
+            "min_time": 3000,
             "max_time": 60000,
             "base_spawn_cycle": 50,
             "spawn_cycle": 50,
@@ -26,59 +26,137 @@ enemy_list = [
             "spawn_timer": 0,
         },
     },
+    {
+        "enemy_class": ShooterZombie,
+        "spawn_data": {
+            "min_time": 5000,
+            "max_time": 60000,
+            "base_spawn_cycle": 120,
+            "spawn_cycle": 120,
+            "min_spawn_cycle": 60,
+            "spawn_timer": 0,
+        },
+    },
+    {
+        "enemy_class": BoarZombie,
+        "spawn_data": {
+            "min_time": 500000,
+            "max_time": 60000,
+            "base_spawn_cycle": 180,
+            "spawn_cycle": 180,
+            "min_spawn_cycle": 120,
+            "spawn_timer": 0,
+        },
+    },
+    {
+        "enemy_class": SlimeZombie,
+        "spawn_data": {
+            "min_time": 500000,
+            "max_time": 60000,
+            "base_spawn_cycle": 240,
+            "spawn_cycle": 240,
+            "min_spawn_cycle": 120,
+            "spawn_timer": 0,
+        },
+    },
+    {
+        "enemy_class": BomberZombie,
+        "spawn_data": {
+            "min_time": 0,
+            "max_time": 60000,
+            "base_spawn_cycle": 180,
+            "spawn_cycle": 180,
+            "min_spawn_cycle": 90,
+            "spawn_timer": 0,
+        },
+    },
 ]
 
 
-def enemy_spawn(enemies, enemy_list, timer, next_enemy_id):
+def enemy_spawn(enemies, context):
+
+    player = context.player
+    timer = context.game_timer
+    next_enemy_id = context.next_enemy_id
+
+    spawn_margin = 200
 
     for enemy_param in enemy_list:
 
         spawn_data = enemy_param["spawn_data"]
         enemy_class = enemy_param["enemy_class"]
 
-        if spawn_data["min_time"] < timer < spawn_data["max_time"]:
+        # 時間条件
+        if not (spawn_data["min_time"] < timer < spawn_data["max_time"]):
+            continue
 
-            spawn_data["spawn_cycle"] = max(
-                spawn_data["min_spawn_cycle"],
-                spawn_data["base_spawn_cycle"] - timer // 1800,
+        # スポーン間隔調整（時間で徐々に難しくなる）
+        spawn_data["spawn_cycle"] = max(
+            spawn_data["min_spawn_cycle"],
+            spawn_data["base_spawn_cycle"] - timer // 1800,
+        )
+
+        spawn_data["spawn_timer"] += 1
+
+        if spawn_data["spawn_timer"] <= spawn_data["spawn_cycle"]:
+            continue
+
+        # =========================
+        # プレイヤー中心のワールドスポーン
+        # =========================
+
+        is_boar = enemy_class == BoarZombie
+
+        if is_boar:
+            direction = random.randint(2, 3)
+        else:
+            direction = random.randint(0, 3)
+
+        if direction == 0:
+            # 上
+            x = random.randint(
+                int(player.x - WIDTH / 2),
+                int(player.x + WIDTH / 2),
+            )
+            y = player.y - HEIGHT / 2 - spawn_margin
+
+        elif direction == 1:
+            # 下
+            x = random.randint(
+                int(player.x - WIDTH / 2),
+                int(player.x + WIDTH / 2),
+            )
+            y = player.y + HEIGHT / 2 + spawn_margin
+
+        elif direction == 2:
+            # 左
+            x = player.x - WIDTH / 2 - spawn_margin
+            y = random.randint(
+                int(player.y - HEIGHT / 2),
+                int(player.y + HEIGHT / 2),
             )
 
-            spawn_data["spawn_timer"] += 1
+        else:
+            # 右
+            x = player.x + WIDTH / 2 + spawn_margin
+            y = random.randint(
+                int(player.y - HEIGHT / 2),
+                int(player.y + HEIGHT / 2),
+            )
 
-            if spawn_data["spawn_timer"] > spawn_data["spawn_cycle"]:
+        # =========================
+        # スポーン生成
+        # =========================
 
-                spawn_point_num = random.randint(0, 3)
+        new_enemy = enemy_class(
+            next_enemy_id,
+            x,
+            y,
+        )
 
-                # 上
-                if spawn_point_num == 0:
-                    x = random.randint(0, WIDTH)
-                    y = -200
+        enemies.append(new_enemy)
+        next_enemy_id += 1
 
-                # 下
-                elif spawn_point_num == 1:
-                    x = random.randint(0, WIDTH)
-                    y = HEIGHT + 200
-
-                # 左
-                elif spawn_point_num == 2:
-                    x = -200
-                    y = random.randint(0, HEIGHT)
-
-                # 右
-                else:
-                    x = WIDTH + 200
-                    y = random.randint(0, HEIGHT)
-
-                new_enemy = enemy_class(
-                    next_enemy_id,
-                    x,
-                    y,
-                )
-
-                enemies.append(new_enemy)
-
-                next_enemy_id += 1
-
-                spawn_data["spawn_timer"] = 0
+        spawn_data["spawn_timer"] = 0
 
     return next_enemy_id

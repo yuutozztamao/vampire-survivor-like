@@ -11,7 +11,8 @@ from utils import get_weapon_by_id
 level_up_pool = {
     "damage_up": 10,
     "speed_up": 10,
-    "normal_weapon": 103,
+    "pickup_radius": 5,
+    "normal_weapon": 3,
     "random_weapon": 3,
     "random_aim_weapon": 2,
     "freeze_weapon": 3,
@@ -79,6 +80,9 @@ def apply_level_up(choice, player, weapons):
     elif choice == "speed_up":
         add_param(player, "speed", 1)
 
+    elif choice == "pickup_radius":
+        add_param(player, "pickup_radius", 30)
+
     elif choice == "normal_weapon":
         unlock_weapon(weapons, "normal_weapon")
 
@@ -100,9 +104,9 @@ def apply_level_up(choice, player, weapons):
 # =========================
 
 
-def build_level_up_pool(base_pool, weapons):
+def build_level_up_pool(weapons):
 
-    pool = base_pool.copy()
+    pool = level_up_pool.copy()
 
     for key in list(pool):
 
@@ -141,7 +145,11 @@ def unlock_weapon(weapons, weapon_id):
 # =========================
 
 
-def level_up_select(event, level_up_choices, player, weapons):
+def level_up_select(event, context):
+
+    level_up_choices = context.level_up_choices
+    player = context.player
+    weapons = context.weapons
 
     if event.type != pygame.KEYDOWN:
         return None

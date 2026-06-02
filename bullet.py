@@ -1,5 +1,5 @@
 from utils import is_hit, enemy_knockback
-from systems.collision import *
+from systems.collision import bullet_enemy_collision
 
 
 class Bullet:
@@ -77,6 +77,8 @@ class Bullet:
 
         self.check_dead()
 
-    def draw(self, screen):
+    def draw(self, screen, context):
+        cx = context.camera_x
+        cy = context.camera_y
 
-        screen.blit(self.images[self.image_index], (self.draw_x, self.draw_y))
+        screen.blit(self.images[self.image_index], (self.draw_x - cx, self.draw_y - cy))
