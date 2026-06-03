@@ -91,6 +91,10 @@ def load_assets():
         ["images/bomber_zombie_0.png"], BomberZombie.draw_radius * 2
     )
 
+    assets["image"]["ghost_zombie"] = load_images(
+        ["images/ghost_zombie_0.png"], GhostZombie.draw_radius * 2
+    )
+
     assets["image"]["normal_bullet"] = load_images(
         [
             "images/normal_bullet_0.png",
@@ -111,6 +115,10 @@ def load_assets():
     assets["image"]["freeze_bullet"] = load_images(
         ["images/freeze_bullet_0.png"],
         FreezeWeapon.bullet_draw_radius * 2,
+    )
+
+    assets["image"]["balloon_mine"] = load_images(
+        ["images/balloon_mine_0.png"], MineWeapon.mine_draw_radius * 2
     )
 
     assets["image"]["surround"] = load_images(
@@ -145,6 +153,8 @@ def set_images(assets):
 
     BomberZombie.images = assets["image"]["bomber_zombie"]
 
+    GhostZombie.images = assets["image"]["ghost_zombie"]
+
     NormalWeapon.bullet_images = assets["image"]["normal_bullet"]
 
     RandomWeapon.bullet_images = assets["image"]["random_bullet"]
@@ -152,6 +162,8 @@ def set_images(assets):
     RandomAimWeapon.bullet_images = assets["image"]["random_aim_bullet"]
 
     FreezeWeapon.bullet_images = assets["image"]["freeze_bullet"]
+
+    MineWeapon.mine_images = assets["image"]["balloon_mine"]
 
     SurroundWeapon.images = assets["image"]["surround"]
 

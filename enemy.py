@@ -35,6 +35,7 @@ class Enemy:
         self.attack_power = attack_power
         self.exp = exp
         self.images = images
+        self.separate = True
         self.health_bar_timer = 0
         self.hit_effect_timer = 0
         self.image_index = 0
@@ -565,5 +566,94 @@ class BomberZombie(Enemy):
                 self.explosion_radius,
                 2,
             )
+
+        self.draw_health_bar(screen, context)
+
+
+class GhostZombie(Enemy):
+
+    images = []
+
+    hit_radius = 35
+    draw_radius = 35
+
+    speed = 1.1
+
+    max_health = 25
+
+    attack_power = 15
+
+    exp = 20
+
+    def __init__(self, id, x, y):
+
+        cls = type(self)
+
+        super().__init__(
+            id=id,
+            x=x,
+            y=y,
+            hit_radius=cls.hit_radius,
+            draw_radius=cls.draw_radius,
+            speed=cls.speed,
+            max_health=cls.max_health,
+            attack_power=cls.attack_power,
+            exp=cls.exp,
+            images=cls.images,
+        )
+
+        self.ghost = True
+        self.alpha = 100
+        self.materializing = False
+        self.materialize_distance = 170
+
+    def update(self, context):
+
+        super().update(context)
+
+        if not self.ghost and not self.materializing:
+            return
+
+        player = context.player
+
+        dx = player.x - self.x
+        dy = player.y - self.y
+
+        distance = math.hypot(dx, dy)
+
+        if distance < self.materialize_distance:
+            self.materializing = True
+            self.ghost = False
+
+        if self.materializing:
+
+            self.alpha += 3
+
+            if self.alpha >= 255:
+
+                self.alpha = 255
+                self.materializing = False
+                self.ghost = False
+
+    def draw(self, screen, context):
+
+        if not self.materializing and not self.ghost:
+            super().draw(screen, context)
+            return
+
+        image = self.images[self.image_index].copy()
+
+        image.set_alpha(self.alpha)
+
+        cx = context.camera_x
+        cy = context.camera_y
+
+        screen.blit(
+            image,
+            (
+                self.draw_x - cx,
+                self.draw_y - cy,
+            ),
+        )
 
         self.draw_health_bar(screen, context)

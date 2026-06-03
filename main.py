@@ -10,6 +10,7 @@ from utils import enemy_separate
 from systems.collision import (
     player_enemy_collision,
     bullet_enemy_collision,
+    mine_enemy_collision,
     enemy_bullet_collision,
     gem_collision,
 )
@@ -23,6 +24,7 @@ from systems.drawing import (
     draw_game_over,
     draw_background,
     draw_explosions,
+    draw_lightning_effects,
 )
 from systems.weapon_factory import create_weapon
 
@@ -52,6 +54,16 @@ def update_explosions(explosions):
             explosions.remove(explosion)
 
 
+def update_lightning_effects(lightning_effects):
+
+    for effect in lightning_effects[:]:
+
+        effect["timer"] -= 1
+
+        if effect["timer"] <= 0:
+            lightning_effects.remove(effect)
+
+
 class GameContext:
 
     def __init__(
@@ -64,10 +76,12 @@ class GameContext:
         self.enemies = []
         self.weapons = []
         self.bullets = []
+        self.mines = []
         self.enemy_bullets = []
         self.gems = []
         self.damage_texts = []
         self.explosions = []
+        self.lightning_effects = []
         self.keys = keys
         self.camera_x = 0
         self.camera_y = 0
@@ -96,11 +110,10 @@ def main():
     player = Player()
     context = GameContext(player)
 
-    initial_weapons = ["normal_weapon"]
+    initial_weapons = ["mine_weapon"]
 
     for name in initial_weapons:
         w = create_weapon(name)
-        w.unlocked = True
         context.weapons.append(w)
 
     running = True
@@ -157,6 +170,13 @@ def main():
                 bullet for bullet in context.bullets if not bullet.dead
             ]
 
+            for mine in context.mines:
+                mine.update(context)
+
+            mine_enemy_collision(context)
+
+            context.mines[:] = [mine for mine in context.mines if not mine.dead]
+
             for enemy_bullet in context.enemy_bullets:
                 enemy_bullet.update(context)
 
@@ -168,6 +188,7 @@ def main():
 
             update_damage_texts(context.damage_texts)
             update_explosions(context.explosions)
+            update_lightning_effects(context.lightning_effects)
 
             context.level_up, context.need_exp = gem_collision(context)
 
@@ -208,10 +229,15 @@ def main():
         for bullet in context.bullets:
             bullet.draw(screen, context)
 
+        for mine in context.mines:
+            mine.draw(screen, context)
+
         for enemy_bullet in context.enemy_bullets:
             enemy_bullet.draw(screen, context)
 
         draw_explosions(screen, context)
+
+        draw_lightning_effects(screen, context)
 
         for gem in context.gems:
             gem.draw(screen, context)

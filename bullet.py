@@ -1,5 +1,4 @@
 from utils import is_hit, enemy_knockback
-from systems.collision import bullet_enemy_collision
 
 
 class Bullet:

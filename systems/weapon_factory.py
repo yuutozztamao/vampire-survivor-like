@@ -4,6 +4,8 @@ from weapon import (
     RandomAimWeapon,
     FreezeWeapon,
     SurroundWeapon,
+    ChainLightningWeapon,
+    MineWeapon,
 )
 
 # 武器の登録表
@@ -13,6 +15,8 @@ weapon_registry = {
     "random_aim_weapon": RandomAimWeapon,
     "freeze_weapon": FreezeWeapon,
     "surround_weapon": SurroundWeapon,
+    "chain_lightning_weapon": ChainLightningWeapon,
+    "mine_weapon": MineWeapon,
 }
 
 

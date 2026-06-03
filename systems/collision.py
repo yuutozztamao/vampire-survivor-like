@@ -1,5 +1,6 @@
 from utils import is_hit, enemy_knockback
 from systems.condition import *
+import math
 
 
 def player_enemy_collision(context):
@@ -29,7 +30,11 @@ def bullet_enemy_collision(context):
     for bullet in context.bullets:
         for enemy in context.enemies:
 
-            if is_hit(bullet, enemy) and enemy.id not in bullet.hit_enemies:
+            if (
+                is_hit(bullet, enemy)
+                and enemy.id not in bullet.hit_enemies
+                and not getattr(enemy, "ghost", False)
+            ):
 
                 enemy.take_damage(context, bullet.attack_power)
 
@@ -45,6 +50,27 @@ def bullet_enemy_collision(context):
                     return
 
                 bullet.dead = False
+
+
+def mine_enemy_collision(context):
+
+    mines = context.mines
+    enemies = context.enemies
+
+    for mine in mines[:]:
+
+        # すでに爆発準備中なら無視
+        if mine.exploding:
+            continue
+
+        for enemy in enemies:
+
+            if not is_hit(mine, enemy):
+                continue
+
+            mine.exploding = True
+
+            break
 
 
 def enemy_bullet_collision(context):

@@ -17,6 +17,8 @@ level_up_pool = {
     "random_aim_weapon": 2,
     "freeze_weapon": 3,
     "surround_weapon": 2,
+    "chain_lightning_weapon": 2,
+    "mine_weapon": 102,
 }
 
 
@@ -97,6 +99,15 @@ def apply_level_up(choice, player, weapons):
 
     elif choice == "surround_weapon":
         unlock_weapon(weapons, "surround_weapon")
+
+    elif choice == "chain_lightning_weapon":
+        unlock_weapon(
+            weapons,
+            "chain_lightning_weapon",
+        )
+
+    elif choice == "mine_weapon":
+        unlock_weapon(weapons, "mine_weapon")
 
 
 # =========================

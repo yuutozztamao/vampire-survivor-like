@@ -37,17 +37,37 @@ def enemy_separate(enemies):
                 dx /= distance
                 dy /= distance
 
-                enemy1.x += dx * overlap / 2
-                enemy1.y += dy * overlap / 2
+                if enemy1.separate and enemy2.separate:
 
-                enemy2.x -= dx * overlap / 2
-                enemy2.y -= dy * overlap / 2
+                    enemy1.x += dx * overlap / 2
+                    enemy1.y += dy * overlap / 2
+
+                    enemy2.x -= dx * overlap / 2
+                    enemy2.y -= dy * overlap / 2
+
+                elif enemy1.separate and not enemy2.separate:
+
+                    enemy1.x += dx * overlap
+                    enemy1.y += dy * overlap
+
+                elif not enemy1.separate and enemy2.separate:
+
+                    enemy2.x -= dx * overlap
+                    enemy2.y -= dy * overlap
 
 
-def enemy_knockback(enemy, bullet):
-    # ノックバック
-    enemy.x += bullet.x_speed * 2
-    enemy.y += bullet.y_speed * 2
+def enemy_knockback(enemy, source, power=10):
+
+    dx = enemy.x - source.x
+    dy = enemy.y - source.y
+
+    distance = math.hypot(dx, dy)
+
+    if distance == 0:
+        return
+
+    enemy.x += dx / distance * power
+    enemy.y += dy / distance * power
 
 
 def get_closest_enemy(player, enemies):

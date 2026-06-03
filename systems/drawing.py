@@ -370,3 +370,38 @@ def draw_explosions(screen, context):
                 y - radius,
             ),
         )
+
+
+def draw_lightning_effects(screen, context):
+
+    import pygame
+    import random
+
+    cx = context.camera_x
+    cy = context.camera_y
+
+    for effect in context.lightning_effects:
+
+        x1 = effect["x1"] - cx
+        y1 = effect["y1"] - cy
+        x2 = effect["x2"] - cx
+        y2 = effect["y2"] - cy
+
+        mid_x = (x1 + x2) / 2 + random.randint(-15, 15)
+        mid_y = (y1 + y2) / 2 + random.randint(-15, 15)
+
+        pygame.draw.line(
+            screen,
+            (180, 220, 255),
+            (x1, y1),
+            (mid_x, mid_y),
+            3,
+        )
+
+        pygame.draw.line(
+            screen,
+            (180, 220, 255),
+            (mid_x, mid_y),
+            (x2, y2),
+            3,
+        )
