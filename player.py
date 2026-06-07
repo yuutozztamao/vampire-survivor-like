@@ -1,13 +1,18 @@
 import pygame
 
 from settings import WIDTH, HEIGHT
-from systems.drawing import *
-
+from utils import create_white_image
+from systems.ui import draw_entity_health_bar
 
 class Player:
 
     draw_radius = 35
     images = []
+
+    health_bar_height = 7
+    health_bar_back_color = (100, 100, 100)
+    health_bar_color = (0, 255, 0)
+    health_bar_visible = True
 
     def __init__(self):
         self.x = WIDTH / 2
@@ -22,6 +27,7 @@ class Player:
         self.exp = 0
         self.lv = 0
         self.invincible_timer = 0
+        self.image_index = 0
 
     @property
     def draw_x(self):
@@ -31,9 +37,58 @@ class Player:
     def draw_y(self):
         return self.y - self.draw_radius
 
+    @property
+    def is_blinking(self):
+
+        return (
+            self.invincible_timer > 0
+            and self.invincible_timer % 6 > 4
+        )
+
+    @property
+    def current_image(self):
+
+        return self.images[self.image_index]
+    
+    @property
+    def draw_image(self):
+
+        if self.is_blinking:
+            return create_white_image(self.current_image)
+
+        return self.current_image
+
+    @property
+    def health_bar_length(self):
+        return self.draw_radius + 20
+
+    @property
+    def health_bar_y(self):
+
+        return self.y + self.hit_radius
+
+    @property
+    def health_bar_value(self):
+
+        return self.health
+
+    @property
+    def health_bar_max_value(self):
+
+        return self.max_health
+
     def update(self, context):
-        self.invincible_timer = max(self.invincible_timer - 1, 0)
+
         self.move(context)
+
+        self.update_timers()
+
+    def update_timers(self):
+
+        self.invincible_timer = max(
+            self.invincible_timer - 1,
+            0,
+        )
 
     def move(self, context):
 
@@ -71,32 +126,24 @@ class Player:
 
     def draw(self, screen, context):
 
-        cx = context.camera_x
-        cy = context.camera_y
-
-        if self.invincible_timer > 0 and self.invincible_timer % 6 > 4:
-            white_img = self.images[0].copy()
-            white_img.fill((255, 255, 255), special_flags=pygame.BLEND_RGB_MAX)
-            screen.blit(white_img, (self.draw_x - cx, self.draw_y - cy))
-        else:
-            screen.blit(self.images[0], (self.draw_x - cx, self.draw_y - cy))
+        self.draw_sprite(screen, context)
 
         self.draw_health_bar(screen, context)
 
-    def draw_health_bar(self, screen, context):
+    def draw_sprite(self, screen, context):
 
         cx = context.camera_x
         cy = context.camera_y
 
-        length = 80
-        value = self.health
-        max_value = self.max_health
-        height = 7
+        screen.blit(
+            self.draw_image,
+            (self.draw_x - cx, self.draw_y - cy),
+        )
 
-        x = self.x - length / 2 - cx
-        y = self.y + self.hit_radius - cy
+    def draw_health_bar(self, screen, context):
 
-        back_color = (100, 100, 100)
-        bar_color = (0, 255, 0)
-
-        draw_bar(screen, length, value, max_value, height, x, y, back_color, bar_color)
+        draw_entity_health_bar(
+            screen,
+            context,
+            self,
+        )

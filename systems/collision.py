@@ -1,7 +1,6 @@
 from utils import is_hit, enemy_knockback
-from systems.condition import *
+from systems.condition import apply_frozen
 import math
-
 
 def player_enemy_collision(context):
 
@@ -25,9 +24,33 @@ def player_enemy_collision(context):
             break
 
 
-def bullet_enemy_collision(context):
+def bullet_shield_collision(context):
 
     for bullet in context.bullets:
+
+        hit_shield = damage_shields_in_circle(
+            context,
+            bullet.x,
+            bullet.y,
+            bullet.hit_radius,
+            bullet.attack_power,
+        )
+
+        if hit_shield:
+
+            bullet.dead = True
+
+            return
+
+
+def bullet_enemy_collision(context):
+
+    bullet_shield_collision(context)
+
+    for bullet in context.bullets:
+        if bullet.dead:
+            continue
+        
         for enemy in context.enemies:
 
             if (
@@ -95,6 +118,39 @@ def enemy_bullet_collision(context):
         bullet.dead = True
 
         break
+
+
+def damage_shields_in_circle(
+    context,
+    x,
+    y,
+    radius,
+    attack_power,
+):
+
+    hit_shield = False
+
+    for enemy in context.enemies:
+
+        if not getattr(enemy, "shield_active", False):
+            continue
+
+        distance = math.hypot(
+            x - enemy.x,
+            y - enemy.y,
+        )
+
+        if distance > radius + enemy.shield_radius:
+            continue
+
+        enemy.take_shield_damage(
+            context,
+            attack_power,
+        )
+
+        hit_shield = True
+
+    return hit_shield
 
 
 def gem_collision(context):

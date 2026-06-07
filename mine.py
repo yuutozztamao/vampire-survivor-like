@@ -1,5 +1,7 @@
 import pygame
-
+from utils import get_distance
+from systems.collision import damage_shields_in_circle
+from systems.effect import add_explosion_effect
 
 class Mine:
 
@@ -27,7 +29,7 @@ class Mine:
         self.image_index = 0
 
         self.explode_timer = 0
-        self.explode_cycle = 100
+        self.explode_cycle = 30
         self.exploding = False
 
         self.dead = False
@@ -46,19 +48,34 @@ class Mine:
 
         if self.exploding:
 
-            self.draw_radius += 1
-
             self.explode_timer += 1
 
             if self.explode_timer >= self.explode_cycle:
+                
+                damage_shields_in_circle(
+                    context,
+                    self.x,
+                    self.y,
+                    self.explosion_radius,
+                    self.attack_power,
+                )
+                
+                for enemy in context.enemies[:]:
 
-                context.explosions.append(
-                    {
-                        "x": self.x,
-                        "y": self.y,
-                        "radius": self.explosion_radius,
-                        "timer": 20,
-                    }
+                    distance = get_distance(self, enemy)
+
+                    if distance <= self.explosion_radius + enemy.hit_radius:
+
+                        enemy.take_damage(
+                            context,
+                            self.attack_power,
+                        )
+
+                add_explosion_effect(
+                    context,
+                    self.x,
+                    self.y,
+                    self.explosion_radius,
                 )
 
                 self.dead = True
@@ -66,13 +83,26 @@ class Mine:
     def draw(self, screen, context):
 
         image = self.images[self.image_index]
+
+        if self.exploding:
+            ratio = self.explode_timer / self.explode_cycle
+            scale = 1 + ratio * 0.5
+
+            width = int(image.get_width() * scale)
+            height = int(image.get_height() * scale)
+
+            image = pygame.transform.scale(
+                image,
+                (width, height),
+            )
+
         cx = context.camera_x
         cy = context.camera_y
 
         screen.blit(
             image,
             (
-                self.draw_x - cx,
-                self.draw_y - cy,
+                self.x - image.get_width() / 2 - cx,
+                self.y - image.get_height() / 2 - cy,
             ),
         )

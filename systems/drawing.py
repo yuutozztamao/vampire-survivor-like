@@ -1,4 +1,5 @@
 import pygame
+import random
 
 from settings import WIDTH, HEIGHT, CARD_WIDTH_RATIO, CARD_HEIGHT_RATIO
 from utils import get_weapon_by_id
@@ -181,7 +182,8 @@ def get_display_name(choice, weapons):
 
         return f"{weapon_class.name} UNLOCK"
 
-    # ステータス強化
+    # レベルアップ候補のIDを、カードUIのタイトルとして画面に表示する名前に変換する表
+    # 例: "damage_up" → "Attack"
     name_map = {
         "damage_up": "Attack",
         "speed_up": "Speed",
@@ -200,10 +202,21 @@ def get_level_up_description(choice, weapons):
 
     if weapon:
 
+        # 武器の強化内容の変数名を、カードUIの説明文として画面に表示する名前に変換する表
+        # 例: "attack_power" → "Attack"
         effect_map = {
             "cycle": "Cycle",
             "attack_power": "Attack",
             "bullet_speed": "Bullet Speed",
+            "shot_count": "Shot Count",
+            "outer_hit_radius": "Area Size",
+            "inner_hit_radius": "Inner Radius",
+            "chain_count": "Chain Count",
+            "chain_range": "Chain Range",
+            "first_range": "First Range",
+            "explosion_radius": "Explosion Radius",
+            "place_distance": "Place Distance",
+            "poison_rate": "Poison Rate",
         }
 
         texts = []
@@ -284,7 +297,7 @@ def draw_damage_texts(screen, damage_texts, font, context):
 def draw_timer(screen, font, context):
 
     # フレーム → 秒
-    total_seconds = context.game_timer // 60
+    total_seconds = context.game_timer_sec
 
     minutes = total_seconds // 60
     seconds = total_seconds % 60
@@ -353,9 +366,14 @@ def draw_explosions(screen, context):
             pygame.SRCALPHA,
         )
 
+        color = explosion.get(
+            "color",
+            (255, 80, 0, 100),
+        )
+
         pygame.draw.circle(
             explosion_surface,
-            (255, 80, 0, 100),
+            color,
             (
                 radius,
                 radius,
@@ -373,9 +391,6 @@ def draw_explosions(screen, context):
 
 
 def draw_lightning_effects(screen, context):
-
-    import pygame
-    import random
 
     cx = context.camera_x
     cy = context.camera_y
@@ -405,3 +420,21 @@ def draw_lightning_effects(screen, context):
             (x2, y2),
             3,
         )
+
+
+def draw_boss_area_frame(screen, context):
+
+    if context.boss_area is None:
+        return
+
+    pygame.draw.rect(
+        screen,
+        (180, 30, 30),
+        (
+            0,
+            0,
+            WIDTH,
+            HEIGHT,
+        ),
+        5,
+    )

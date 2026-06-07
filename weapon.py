@@ -1,10 +1,17 @@
 import random
 import math
+from settings import WIDTH, HEIGHT
 
+from systems.collision import damage_shields_in_circle
+from systems.effect import add_lightning_effect
 from bullet import Bullet
 from mine import Mine
-from utils import get_closest_enemy, enemy_knockback
-
+from hornet_nest import HornetNest
+from utils import (
+    enemy_knockback,
+    get_direction_and_distance,
+    get_closest_objects,
+)
 
 class Weapon:
 
@@ -29,6 +36,16 @@ class Weapon:
             return None
 
         return self.level_data[self.level - 1]
+
+    def update(self, context):
+
+        if self.is_ready():
+
+            self.activate(context)
+
+    def activate(self, context):
+
+        raise NotImplementedError
 
     def level_up(self):
 
@@ -57,6 +74,17 @@ class Weapon:
         )
         return True
 
+    def is_ready(self):
+
+        self.timer += 1
+
+        if self.timer <= self.cycle:
+            return False
+
+        self.timer = 0
+
+        return True
+
 
 class ShootingWeapon(Weapon):
 
@@ -78,18 +106,11 @@ class ShootingWeapon(Weapon):
         self.bullet_hit_radius = bullet_hit_radius
         self.bullet_draw_radius = bullet_draw_radius
         self.through = through
-        self.level_data = level_data
         self.shot_count = 2
 
-    def update(self, context):
+    def activate(self, context):
 
-        self.timer += 1
-
-        if self.timer > self.cycle:
-
-            self.shoot(context)
-
-            self.timer = 0
+        self.shoot(context)
 
 
 class DamageAreaWeapon(Weapon):
@@ -98,16 +119,9 @@ class DamageAreaWeapon(Weapon):
 
         super().__init__(name, cycle, attack_power, level_data)
 
-        self.level_data = level_data
-        self.image_index = 0
+    def activate(self, context):
 
-    def update(self, context):
-
-        self.timer += 1
-
-        if self.timer > self.cycle:
-            self.attack(context)
-            self.timer = 0
+        self.attack(context)
 
 
 class NormalWeapon(ShootingWeapon):
@@ -370,15 +384,11 @@ class FreezeWeapon(ShootingWeapon):
         if not enemies:
             return
 
-        sorted_enemies = sorted(
+        targets = get_closest_objects(
+            player,
             enemies,
-            key=lambda enemy: math.hypot(
-                enemy.x - player.x,
-                enemy.y - player.y,
-            ),
+            self.shot_count,
         )
-
-        targets = sorted_enemies[: self.shot_count]
 
         for enemy in targets:
 
@@ -412,7 +422,7 @@ class SurroundWeapon(DamageAreaWeapon):
     name = "SURROUND AREA"
 
     cycle = 20
-    attack_power = 7
+    attack_power = 4
 
     outer_hit_radius = 200
     inner_hit_radius = 150
@@ -463,13 +473,18 @@ class SurroundWeapon(DamageAreaWeapon):
 
     def attack(self, context):
 
+        damage_shields_in_circle(
+            context,
+            context.player.x,
+            context.player.y,
+            self.outer_hit_radius,
+            self.attack_power,
+        )
+
         for enemy in context.enemies[:]:
 
             # 中心同士の距離
-            dx = context.player.x - enemy.x
-            dy = context.player.y - enemy.y
-
-            distance = math.hypot(dx, dy)
+            _, _, distance = get_direction_and_distance(enemy, context.player)
 
             # 敵の半径
             enemy_hit_radius = enemy.hit_radius / 2
@@ -551,13 +566,22 @@ class ChainLightningWeapon(Weapon):
 
     def update(self, context):
 
-        self.timer += 1
-
-        if self.timer > self.cycle:
+        if self.is_ready():
 
             self.attack(context)
 
-            self.timer = 0
+    def get_lightning_start_position(
+        self,
+        player,
+        hit_enemies,
+    ):
+
+        if not hit_enemies:
+            return player.x, player.y
+
+        last_enemy = hit_enemies[-1]
+
+        return last_enemy.x, last_enemy.y
 
     def attack(self, context):
 
@@ -567,27 +591,17 @@ class ChainLightningWeapon(Weapon):
         if not enemies:
             return
 
-        first_candidates = []
+        first_targets = get_closest_objects(
+            player,
+            enemies,
+            count=1,
+            max_distance=self.first_range,
+        )
 
-        for enemy in enemies:
-
-            dx = enemy.x - player.x
-            dy = enemy.y - player.y
-            distance = math.hypot(dx, dy)
-
-            if distance <= self.first_range:
-                first_candidates.append(enemy)
-
-        if not first_candidates:
+        if not first_targets:
             return
 
-        current_target = min(
-            first_candidates,
-            key=lambda enemy: math.hypot(
-                enemy.x - player.x,
-                enemy.y - player.y,
-            ),
-        )
+        current_target = first_targets[0]
 
         hit_enemies = []
 
@@ -597,48 +611,91 @@ class ChainLightningWeapon(Weapon):
                 break
 
             damage = int(self.attack_power * (self.damage_rate ** len(hit_enemies)))
+            
+            shield = self.get_shield_at_target(
+                context,
+                current_target,
+            )
+
+            if shield:
+
+                damage_shields_in_circle(
+                    context,
+                    current_target.x,
+                    current_target.y,
+                    current_target.hit_radius,
+                    damage,
+                )
+
+                start_x, start_y = self.get_lightning_start_position(
+                    player,
+                    hit_enemies,
+                )
+
+                add_lightning_effect(
+                    context,
+                    start_x,
+                    start_y,
+                    shield.x,
+                    shield.y,
+                )
+
+                break
 
             current_target.take_damage(
                 context,
                 damage,
             )
 
-            context.lightning_effects.append(
-                {
-                    "x1": player.x if len(hit_enemies) == 0 else hit_enemies[-1].x,
-                    "y1": player.y if len(hit_enemies) == 0 else hit_enemies[-1].y,
-                    "x2": current_target.x,
-                    "y2": current_target.y,
-                    "timer": 8,
-                }
+            start_x, start_y = self.get_lightning_start_position(
+                player,
+                hit_enemies,
+            )
+
+            add_lightning_effect(
+                context,
+                start_x,
+                start_y,
+                current_target.x,
+                current_target.y,
             )
 
             hit_enemies.append(current_target)
 
-            next_candidates = []
+            next_candidates = [enemy for enemy in enemies if enemy not in hit_enemies]
 
-            for enemy in enemies:
+            next_targets = get_closest_objects(
+                current_target,
+                next_candidates,
+                count=1,
+                max_distance=self.chain_range,
+            )
 
-                if enemy in hit_enemies:
-                    continue
-
-                dx = enemy.x - current_target.x
-                dy = enemy.y - current_target.y
-                distance = math.hypot(dx, dy)
-
-                if distance <= self.chain_range:
-                    next_candidates.append(enemy)
-
-            if not next_candidates:
+            if not next_targets:
                 break
 
-            current_target = min(
-                next_candidates,
-                key=lambda enemy: math.hypot(
-                    enemy.x - current_target.x,
-                    enemy.y - current_target.y,
-                ),
+            current_target = next_targets[0]
+    
+    def get_shield_at_target(
+        self,
+        context,
+        target,
+    ):
+
+        for enemy in context.enemies:
+
+            if not getattr(enemy, "shield_active", False):
+                continue
+
+            distance = math.hypot(
+                target.x - enemy.x,
+                target.y - enemy.y,
             )
+
+            if distance <= enemy.shield_radius + target.hit_radius:
+                return enemy
+
+        return None
 
 
 class MineWeapon(Weapon):
@@ -683,13 +740,9 @@ class MineWeapon(Weapon):
 
     def update(self, context):
 
-        self.timer += 1
-
-        if self.timer > self.cycle:
+        if self.is_ready():
 
             self.place_mine(context)
-
-            self.timer = 0
 
     def place_mine(self, context):
 
@@ -721,3 +774,79 @@ class MineWeapon(Weapon):
         )
 
         context.mines.append(mine)
+
+
+class HornetNestWeapon(Weapon):
+
+    weapon_id = "hornet_nest_weapon"
+
+    name = "HORNET NEST"
+
+    cycle = 180
+
+    attack_power = 8
+
+    hit_radius = 120
+    draw_radius = 25
+
+    duration = 240
+    attack_cycle = 30
+    poison_rate = 0.3
+
+    nest_images = []
+    bee_images = []
+
+    level_data = [
+        {"attack_power": 4},
+        {"cycle": -30},
+        {"hit_radius": 30},
+    ]
+
+    def __init__(self):
+
+        cls = type(self)
+
+        super().__init__(
+            name=cls.name,
+            cycle=cls.cycle,
+            attack_power=cls.attack_power,
+            level_data=cls.level_data,
+        )
+
+        self.hit_radius = cls.hit_radius
+        self.draw_radius = cls.draw_radius
+        self.duration = cls.duration
+        self.attack_cycle = cls.attack_cycle
+
+    def update(self, context):
+
+        if self.is_ready():
+
+            self.place_nest(context)
+
+    def place_nest(self, context):
+
+        x = random.randint(
+            int(context.camera_x),
+            int(context.camera_x + WIDTH),
+        )
+
+        y = random.randint(
+            int(context.camera_y),
+            int(context.camera_y + HEIGHT),
+        )
+
+        nest = HornetNest(
+            x=x,
+            y=y,
+            attack_power=self.attack_power,
+            hit_radius=self.hit_radius,
+            draw_radius=self.draw_radius,
+            duration=self.duration,
+            attack_cycle=self.attack_cycle,
+            images=self.nest_images,
+            bee_images=self.bee_images,
+            poison_rate=self.poison_rate,
+        )
+
+        context.hornet_nests.append(nest)

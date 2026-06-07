@@ -1,6 +1,3 @@
-from utils import is_hit, enemy_knockback
-
-
 class Bullet:
 
     def __init__(
@@ -43,28 +40,6 @@ class Bullet:
 
         self.x += self.x_speed
         self.y += self.y_speed
-
-    def hit_check(self, enemies, player, damage_texts, gems):
-
-        for enemy in enemies[:]:
-
-            if is_hit(self, enemy) and enemy.id not in self.hit_enemies:
-
-                enemy.take_damage(
-                    player,
-                    enemies,
-                    self.attack_power,
-                    damage_texts,
-                    gems,
-                )
-
-                enemy_knockback(enemy, self)
-
-                self.hit_enemies.add(enemy.id)
-
-                if not self.through:
-                    self.dead = True
-                    return
 
     def check_dead(self):
         self.timer -= 1

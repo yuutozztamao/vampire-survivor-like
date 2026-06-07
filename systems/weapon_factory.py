@@ -6,6 +6,7 @@ from weapon import (
     SurroundWeapon,
     ChainLightningWeapon,
     MineWeapon,
+    HornetNestWeapon,
 )
 
 # 武器の登録表
@@ -17,6 +18,7 @@ weapon_registry = {
     "surround_weapon": SurroundWeapon,
     "chain_lightning_weapon": ChainLightningWeapon,
     "mine_weapon": MineWeapon,
+    "hornet_nest_weapon": HornetNestWeapon,
 }
 
 

@@ -1,7 +1,7 @@
 import random
 import pygame
 
-from systems.weapon_factory import create_weapon
+from systems.weapon_factory import create_weapon, weapon_registry
 from utils import get_weapon_by_id
 
 # =========================
@@ -18,7 +18,16 @@ level_up_pool = {
     "freeze_weapon": 3,
     "surround_weapon": 2,
     "chain_lightning_weapon": 2,
-    "mine_weapon": 102,
+    "mine_weapon": 2,
+    "hornet_nest_weapon": 3,
+}
+
+# ステータス強化の内容をまとめた表
+# "レベルアップ候補ID": ("強化する変数名", 増やす値)
+status_level_up_data = {
+    "damage_up": ("attack_rate", 0.2),
+    "speed_up": ("speed", 1),
+    "pickup_radius": ("pickup_radius", 30),
 }
 
 
@@ -76,38 +85,15 @@ def add_param(obj, param, value, minimum=None):
 
 def apply_level_up(choice, player, weapons):
 
-    if choice == "damage_up":
-        add_param(player, "attack_rate", 0.2)
+    if choice in status_level_up_data:
 
-    elif choice == "speed_up":
-        add_param(player, "speed", 1)
+        param, value = status_level_up_data[choice]
 
-    elif choice == "pickup_radius":
-        add_param(player, "pickup_radius", 30)
+        add_param(player, param, value)
 
-    elif choice == "normal_weapon":
-        unlock_weapon(weapons, "normal_weapon")
+    elif choice in weapon_registry:
 
-    elif choice == "random_weapon":
-        unlock_weapon(weapons, "random_weapon")
-
-    elif choice == "random_aim_weapon":
-        unlock_weapon(weapons, "random_aim_weapon")
-
-    elif choice == "freeze_weapon":
-        unlock_weapon(weapons, "freeze_weapon")
-
-    elif choice == "surround_weapon":
-        unlock_weapon(weapons, "surround_weapon")
-
-    elif choice == "chain_lightning_weapon":
-        unlock_weapon(
-            weapons,
-            "chain_lightning_weapon",
-        )
-
-    elif choice == "mine_weapon":
-        unlock_weapon(weapons, "mine_weapon")
+        unlock_weapon(weapons, choice)
 
 
 # =========================

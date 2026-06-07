@@ -1,4 +1,4 @@
-import math
+from utils import get_direction_and_distance
 
 
 class Gem:
@@ -25,10 +25,7 @@ class Gem:
 
         player = context.player
 
-        dx = player.x - self.x
-        dy = player.y - self.y
-
-        distance = math.hypot(dx, dy)
+        dx, dy, distance = get_direction_and_distance(self, player)
 
         if distance < player.pickup_radius and distance > 0:
 

@@ -3,12 +3,27 @@ import pygame
 from settings import WIDTH, HEIGHT
 
 
-def is_hit(obj1, obj2):
+def get_distance_xy(x1, y1, x2, y2):
 
-    dx = obj1.x - obj2.x
-    dy = obj1.y - obj2.y
+    dx = x1 - x2
+    dy = y1 - y2
+
+    return math.hypot(dx, dy)
+
+
+def get_direction_and_distance(from_obj, to_obj):
+
+    dx = to_obj.x - from_obj.x
+    dy = to_obj.y - from_obj.y
 
     distance = math.hypot(dx, dy)
+
+    return dx, dy, distance
+
+
+def is_hit(obj1, obj2):
+
+    distance = get_distance(obj1, obj2)
 
     return distance < obj1.hit_radius + obj2.hit_radius
 
@@ -58,35 +73,19 @@ def enemy_separate(enemies):
 
 def enemy_knockback(enemy, source, power=10):
 
-    dx = enemy.x - source.x
-    dy = enemy.y - source.y
+    if getattr(enemy, "shielded", False):
+        return
 
-    distance = math.hypot(dx, dy)
+    if not getattr(enemy, "knockback", True):
+        return
+
+    dx, dy, distance = get_direction_and_distance(source, enemy)
 
     if distance == 0:
         return
 
     enemy.x += dx / distance * power
     enemy.y += dy / distance * power
-
-
-def get_closest_enemy(player, enemies):
-    if not enemies:
-        return None
-
-    closest_enemy = None
-    min_dist = float("inf")
-
-    for enemy in enemies:
-        dx = enemy.x - player.x
-        dy = enemy.y - player.y
-        dist = math.hypot(dx, dy)
-
-        if dist < min_dist:
-            min_dist = dist
-            closest_enemy = enemy
-
-    return closest_enemy
 
 
 def get_weapon_by_id(weapons, weapon_id):
@@ -110,3 +109,58 @@ def is_in_camera(
         context.camera_x - margin <= x <= context.camera_x + WIDTH + margin
         and context.camera_y - margin <= y <= context.camera_y + HEIGHT + margin
     )
+
+
+def get_distance(obj1, obj2):
+
+    dx = obj1.x - obj2.x
+    dy = obj1.y - obj2.y
+
+    return math.hypot(dx, dy)
+
+
+def get_closest_objects(from_obj, objects, count=1, max_distance=None):
+
+    candidates = []
+
+    for obj in objects:
+
+        distance = get_distance(from_obj, obj)
+
+        if max_distance is not None and distance > max_distance:
+            continue
+
+        candidates.append(
+            {
+                "obj": obj,
+                "distance": distance,
+            }
+        )
+
+    candidates.sort(key=lambda candidate: candidate["distance"])
+
+    return [candidate["obj"] for candidate in candidates[:count]]
+
+
+def create_white_image(image):
+
+    white_image = image.copy()
+
+    white_image.fill(
+        (255, 255, 255),
+        special_flags=pygame.BLEND_RGB_MAX,
+    )
+
+    return white_image
+
+
+def is_hit_circle(obj1, x, y, radius):
+
+    distance = get_distance_xy(
+        obj1.x,
+        obj1.y,
+        x,
+        y,
+    )
+
+    return distance < obj1.hit_radius + radius
